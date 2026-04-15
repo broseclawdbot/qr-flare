@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareGradient, flareTints } from '../theme/colors';
@@ -30,6 +30,7 @@ const FEATURES = [
 
 export default function UpgradeScreen({ navigation }) {
   const { isPremium, unlockPremium, lockPremium } = usePremium();
+  const [justUnlocked, setJustUnlocked] = useState(false);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -78,27 +79,27 @@ export default function UpgradeScreen({ navigation }) {
 
       <View style={{ height: 20 }} />
 
-      {isPremium ? (
+      {isPremium || justUnlocked ? (
         <>
           <View style={styles.unlockedBadge}>
-            <Text style={styles.unlockedText}>PREMIUM ACTIVE</Text>
+            <Text style={styles.unlockedEmoji}>&#10003;</Text>
+            <Text style={styles.unlockedText}>PREMIUM UNLOCKED</Text>
+            <Text style={styles.unlockedSub}>
+              Unlimited QR codes, logos, templates, and colors are now yours.
+            </Text>
           </View>
           <View style={{ height: 14 }} />
           <FlareButton title="Start Creating" onPress={() => navigation.navigate('Create')} />
+          <View style={{ height: 10 }} />
+          <FlareButton title="Customize a QR" variant="secondary" onPress={() => navigation.navigate('Create')} />
         </>
       ) : (
         <>
           <FlareButton
             title="Unlock Premium — $4.99"
             onPress={() => {
-              Alert.alert(
-                'Premium Unlocked!',
-                'You now have unlimited QR codes, custom branding, templates, and colors.',
-                [{ text: 'Let\'s Go!', onPress: () => {
-                  unlockPremium();
-                  navigation.navigate('Home');
-                }}]
-              );
+              unlockPremium();
+              setJustUnlocked(true);
             }}
           />
           <Text style={styles.note}>
@@ -205,19 +206,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   unlockedBadge: {
-    backgroundColor: '#2DD4BF22',
+    backgroundColor: '#2DD4BF15',
     borderWidth: 1,
     borderColor: colors.success,
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: 24,
+    paddingVertical: 28,
     paddingHorizontal: 24,
     alignItems: 'center',
     width: '100%',
   },
+  unlockedEmoji: {
+    fontSize: 32,
+    color: colors.success,
+    marginBottom: 10,
+  },
   unlockedText: {
     color: colors.success,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '900',
     letterSpacing: 2,
+  },
+  unlockedSub: {
+    color: colors.textDim,
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

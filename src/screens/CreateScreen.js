@@ -8,7 +8,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import FlareButton from '../components/FlareButton';
 import { colors } from '../theme/colors';
@@ -59,14 +58,7 @@ export default function CreateScreen({ navigation }) {
 
   const handleGenerate = useCallback(() => {
     if (!canGenerate) {
-      Alert.alert(
-        'Free Limit Reached',
-        'You\'ve used your 3 free QR codes. Upgrade to Premium for unlimited generations!',
-        [
-          { text: 'Upgrade', onPress: () => navigation.navigate('Upgrade') },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+      navigation.navigate('Upgrade');
       return;
     }
     incrementGeneration();

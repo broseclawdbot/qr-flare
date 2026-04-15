@@ -1,8 +1,7 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
-import * as MediaLibrary from 'expo-media-library';
 import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareGradient, flareTints } from '../theme/colors';
@@ -12,22 +11,29 @@ export default function PreviewScreen({ route, navigation }) {
   const { payload, type } = route.params || {};
   const { isPremium } = usePremium();
   const shotRef = useRef(null);
+  const [saved, setSaved] = useState(false);
 
   const handleDownload = async () => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Allow photo library access to save your QR code.');
-        return;
+      if (Platform.OS === 'web') {
+        // On web, use canvas to download
+        const uri = await shotRef.current.capture();
+        const link = document.createElement('a');
+        link.href = uri;
+        link.download = `qr-flare-${type || 'code'}.png`;
+        link.click();
+        setSaved(true);
+      } else {
+        const MediaLibrary = require('expo-media-library');
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') return;
+        const uri = await shotRef.current.capture();
+        const asset = await MediaLibrary.createAssetAsync(uri);
+        try { await MediaLibrary.createAlbumAsync('QR Flare', asset, false); } catch (_) {}
+        setSaved(true);
       }
-      const uri = await shotRef.current.capture();
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      try {
-        await MediaLibrary.createAlbumAsync('QR Flare', asset, false);
-      } catch (_) {}
-      Alert.alert('Saved', 'QR code saved to your photo library.');
     } catch (e) {
-      Alert.alert('Error', 'Could not save QR code.');
+      console.log('Download error:', e);
     }
   };
 
@@ -81,7 +87,7 @@ export default function PreviewScreen({ route, navigation }) {
 
       <View style={{ height: 36 }} />
 
-      <FlareButton title="Download Free PNG" onPress={handleDownload} />
+      <FlareButton title={saved ? "Saved!" : "Download Free PNG"} onPress={handleDownload} />
       <View style={{ height: 14 }} />
       <FlareButton
         title={isPremium ? 'Customize' : 'Customize · Locked'}
