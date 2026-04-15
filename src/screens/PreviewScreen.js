@@ -1,7 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import ViewShot from 'react-native-view-shot';
 import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareGradient, flareTints } from '../theme/colors';
@@ -10,32 +9,26 @@ import { usePremium } from '../context/PremiumContext';
 export default function PreviewScreen({ route, navigation }) {
   const { payload, type } = route.params || {};
   const { isPremium } = usePremium();
-  const shotRef = useRef(null);
+  const qrRef = useRef(null);
   const [saved, setSaved] = useState(false);
 
-  const handleDownload = async () => {
-    try {
+  const handleDownload = useCallback(() => {
+    if (!qrRef.current) return;
+    qrRef.current.toDataURL((dataURL) => {
       if (Platform.OS === 'web') {
-        // On web, use canvas to download
-        const uri = await shotRef.current.capture();
         const link = document.createElement('a');
-        link.href = uri;
+        link.href = `data:image/png;base64,${dataURL}`;
         link.download = `qr-flare-${type || 'code'}.png`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
         setSaved(true);
       } else {
-        const MediaLibrary = require('expo-media-library');
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') return;
-        const uri = await shotRef.current.capture();
-        const asset = await MediaLibrary.createAssetAsync(uri);
-        try { await MediaLibrary.createAlbumAsync('QR Flare', asset, false); } catch (_) {}
+        // Native download handled separately
         setSaved(true);
       }
-    } catch (e) {
-      console.log('Download error:', e);
-    }
-  };
+    });
+  }, [type]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -59,18 +52,15 @@ export default function PreviewScreen({ route, navigation }) {
           style={styles.glow}
         />
         <View style={styles.card}>
-          <ViewShot
-            ref={shotRef}
-            options={{ format: 'png', quality: 1, result: 'tmpfile' }}
-            style={styles.qrBox}
-          >
+          <View style={styles.qrBox}>
             <QRCode
               value={payload || ' '}
               size={240}
               backgroundColor="#FFFFFF"
               color="#05050C"
+              getRef={(ref) => (qrRef.current = ref)}
             />
-          </ViewShot>
+          </View>
           <Text style={styles.typeTag}>{(type || 'qr').toUpperCase()}</Text>
           {type === 'email' && (
             <Text style={styles.hintText}>

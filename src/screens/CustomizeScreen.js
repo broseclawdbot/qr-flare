@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,9 @@ import {
   ScrollView,
   Pressable,
   Image,
-  Alert,
+  Platform,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import ViewShot from 'react-native-view-shot';
-import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library';
 import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareTints } from '../theme/colors';
@@ -29,47 +26,65 @@ const BG_COLORS = ['#FFFFFF', '#F5F5F7', '#05050C', '#FEF3C7', '#E0F2FE'];
 
 export default function CustomizeScreen({ route }) {
   const { payload, type } = route.params || {};
-  const shotRef = useRef(null);
+  const qrRef = useRef(null);
 
   const [template, setTemplate] = useState('clean');
   const [fg, setFg] = useState('#05050C');
   const [bg, setBg] = useState('#FFFFFF');
   const [logo, setLogo] = useState(null);
+  const [saved, setSaved] = useState(false);
 
-  const pickLogo = async () => {
-    const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!res.granted) {
-      Alert.alert('Permission needed', 'Allow photo access to pick a logo.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-    if (!result.canceled && result.assets?.[0]) {
-      setLogo(result.assets[0].uri);
-    }
-  };
-
-  const handleDownload = async () => {
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Allow photo library access to save.');
-        return;
-      }
-      const uri = await shotRef.current.capture();
-      const asset = await MediaLibrary.createAssetAsync(uri);
+  const pickLogo = useCallback(async () => {
+    if (Platform.OS === 'web') {
+      // Use native file input on web
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => setLogo(ev.target.result);
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    } else {
       try {
-        await MediaLibrary.createAlbumAsync('QR Flare', asset, false);
-      } catch (_) {}
-      Alert.alert('Saved', 'Premium QR saved to your photo library.');
-    } catch (e) {
-      Alert.alert('Error', 'Could not save QR code.');
+        const ImagePicker = require('expo-image-picker');
+        const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!res.granted) return;
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          setLogo(result.assets[0].uri);
+        }
+      } catch (e) {
+        console.log('ImagePicker error:', e);
+      }
     }
-  };
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    if (!qrRef.current) return;
+    qrRef.current.toDataURL((dataURL) => {
+      if (Platform.OS === 'web') {
+        const link = document.createElement('a');
+        link.href = `data:image/png;base64,${dataURL}`;
+        link.download = `qr-flare-premium-${type || 'code'}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setSaved(true);
+      } else {
+        setSaved(true);
+      }
+    });
+  }, [type]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -81,24 +96,20 @@ export default function CustomizeScreen({ route }) {
       />
 
       <View style={styles.previewShell}>
-        <ViewShot
-          ref={shotRef}
-          options={{ format: 'png', quality: 1, result: 'tmpfile' }}
-        >
-          <TemplateWrapper template={template} bg={bg} fg={fg}>
-            <QRCode
-              value={payload || ' '}
-              size={200}
-              backgroundColor={bg}
-              color={fg}
-              logo={logo ? { uri: logo } : undefined}
-              logoSize={50}
-              logoBackgroundColor={bg}
-              logoBorderRadius={8}
-              logoMargin={4}
-            />
-          </TemplateWrapper>
-        </ViewShot>
+        <TemplateWrapper template={template} bg={bg} fg={fg}>
+          <QRCode
+            value={payload || ' '}
+            size={200}
+            backgroundColor={bg}
+            color={fg}
+            logo={logo ? { uri: logo } : undefined}
+            logoSize={50}
+            logoBackgroundColor={bg}
+            logoBorderRadius={8}
+            logoMargin={4}
+            getRef={(ref) => (qrRef.current = ref)}
+          />
+        </TemplateWrapper>
       </View>
 
       <Text style={styles.sectionLabel}>Template</Text>
@@ -159,7 +170,7 @@ export default function CustomizeScreen({ route }) {
       </View>
 
       <View style={{ height: 32 }} />
-      <FlareButton title="Download Premium QR" onPress={handleDownload} />
+      <FlareButton title={saved ? "Saved!" : "Download Premium QR"} onPress={handleDownload} />
     </ScrollView>
   );
 }
