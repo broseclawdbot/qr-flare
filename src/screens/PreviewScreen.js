@@ -14,17 +14,35 @@ export default function PreviewScreen({ route, navigation }) {
 
   const handleDownload = useCallback(() => {
     if (!qrRef.current) return;
+    // Generate QR as PNG with white background and padding
     qrRef.current.toDataURL((dataURL) => {
       if (Platform.OS === 'web') {
-        const link = document.createElement('a');
-        link.href = `data:image/png;base64,${dataURL}`;
-        link.download = `qr-flare-${type || 'code'}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setSaved(true);
+        // Create a canvas with padding for a clean export
+        const img = new window.Image();
+        img.onload = () => {
+          const padding = 40;
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width + padding * 2;
+          canvas.height = img.height + padding * 2;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, padding, padding);
+          // Add "QR Flare" watermark
+          ctx.fillStyle = '#CCCCCC';
+          ctx.font = '12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Made with QR Flare', canvas.width / 2, canvas.height - 12);
+          const link = document.createElement('a');
+          link.href = canvas.toDataURL('image/png');
+          link.download = `qr-flare-${type || 'code'}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setSaved(true);
+        };
+        img.src = `data:image/png;base64,${dataURL}`;
       } else {
-        // Native download handled separately
         setSaved(true);
       }
     });

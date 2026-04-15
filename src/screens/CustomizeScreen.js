@@ -13,6 +13,46 @@ import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareTints } from '../theme/colors';
 
+// Web helper to capture a DOM element as PNG
+const captureElementAsPNG = (element) => {
+  return new Promise((resolve) => {
+    if (!element) { resolve(null); return; }
+    const node = element._nativeTag || element;
+    // Use html2canvas-like approach with SVG foreignObject
+    const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : { width: 400, height: 400 };
+    const canvas = document.createElement('canvas');
+    const scale = 2; // 2x for retina
+    canvas.width = rect.width * scale;
+    canvas.height = rect.height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    // Draw background
+    ctx.fillStyle = '#0F0F1C';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    // Serialize the element to SVG
+    const svgData = new XMLSerializer().serializeToString(
+      (() => {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', rect.width);
+        svg.setAttribute('height', rect.height);
+        const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        fo.setAttribute('width', '100%');
+        fo.setAttribute('height', '100%');
+        fo.appendChild(node.cloneNode(true));
+        svg.appendChild(fo);
+        return svg;
+      })()
+    );
+    const img = new window.Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(null);
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  });
+};
+
 const TEMPLATES = [
   { key: 'clean', label: 'Clean Frame' },
   { key: 'instagram', label: 'Instagram' },
@@ -103,10 +143,10 @@ export default function CustomizeScreen({ route }) {
             backgroundColor={bg}
             color={fg}
             logo={logo ? { uri: logo } : undefined}
-            logoSize={50}
+            logoSize={70}
             logoBackgroundColor={bg}
-            logoBorderRadius={8}
-            logoMargin={4}
+            logoBorderRadius={12}
+            logoMargin={6}
             getRef={(ref) => (qrRef.current = ref)}
           />
         </TemplateWrapper>
@@ -135,9 +175,18 @@ export default function CustomizeScreen({ route }) {
         {logo ? (
           <Image source={{ uri: logo }} style={styles.logoImg} />
         ) : (
-          <Text style={styles.logoText}>+ Upload Logo</Text>
+          <View style={styles.logoPlaceholder}>
+            <Text style={styles.logoPlus}>+</Text>
+            <Text style={styles.logoText}>Upload Logo</Text>
+            <Text style={styles.logoFormats}>PNG, JPG, SVG</Text>
+          </View>
         )}
       </Pressable>
+      {logo && (
+        <Pressable onPress={() => setLogo(null)} style={styles.removeLogo}>
+          <Text style={styles.removeLogoText}>Remove Logo</Text>
+        </Pressable>
+      )}
 
       <Text style={styles.sectionLabel}>Foreground</Text>
       <View style={styles.row}>
@@ -332,11 +381,39 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   logoImg: { width: '100%', height: '100%', borderRadius: 18 },
+  logoPlaceholder: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  logoPlus: {
+    color: colors.accentCyan,
+    fontSize: 28,
+    fontWeight: '300',
+  },
   logoText: {
     color: colors.textDim,
     fontWeight: '700',
     fontSize: 13,
     letterSpacing: 0.6,
+  },
+  logoFormats: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  removeLogo: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#F43F5E22',
+  },
+  removeLogoText: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 
