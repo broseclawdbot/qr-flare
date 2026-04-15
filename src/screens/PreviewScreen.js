@@ -27,9 +27,10 @@ const BG_COLORS = ['#FFFFFF', '#F5F5F7', '#05050C', '#FEF3C7', '#E0F2FE'];
 
 export default function PreviewScreen({ route, navigation }) {
   const { payload, type } = route.params || {};
-  const { isPremium } = usePremium();
+  const { isPremium, unlockPremium } = usePremium();
   const qrRef = useRef(null);
   const [saved, setSaved] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Customization state — always visible, but only active for premium
   const [template, setTemplate] = useState('clean');
@@ -42,8 +43,14 @@ export default function PreviewScreen({ route, navigation }) {
   const actualTemplate = isPremium ? template : 'clean';
   const actualLogo = isPremium ? logo : null;
 
+  const promptUpgrade = () => setShowUpgradeModal(true);
+  const handleUnlock = () => {
+    unlockPremium();
+    setShowUpgradeModal(false);
+  };
+
   const pickLogo = useCallback(async () => {
-    if (!isPremium) { navigation.navigate('Upgrade'); return; }
+    if (!isPremium) { promptUpgrade(); return; }
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
       input.type = 'file';
@@ -201,7 +208,7 @@ export default function PreviewScreen({ route, navigation }) {
             <Pressable
               key={t.key}
               onPress={() => {
-                if (!isPremium) { navigation.navigate('Upgrade'); return; }
+                if (!isPremium) { promptUpgrade(); return; }
                 setTemplate(t.key);
               }}
               style={[
@@ -249,7 +256,7 @@ export default function PreviewScreen({ route, navigation }) {
           <Pressable
             key={c}
             onPress={() => {
-              if (!isPremium) { navigation.navigate('Upgrade'); return; }
+              if (!isPremium) { promptUpgrade(); return; }
               setFg(c);
             }}
             style={[
@@ -268,7 +275,7 @@ export default function PreviewScreen({ route, navigation }) {
           <Pressable
             key={c}
             onPress={() => {
-              if (!isPremium) { navigation.navigate('Upgrade'); return; }
+              if (!isPremium) { promptUpgrade(); return; }
               setBg(c);
             }}
             style={[
@@ -286,11 +293,46 @@ export default function PreviewScreen({ route, navigation }) {
       {!isPremium && (
         <FlareButton
           title="Unlock All Customization — $4.99"
-          onPress={() => navigation.navigate('Upgrade')}
+          onPress={promptUpgrade}
         />
       )}
 
       <View style={{ height: 40 }} />
+
+      {/* Upgrade Modal Overlay */}
+      {showUpgradeModal && (
+        <Pressable style={styles.modalOverlay} onPress={() => setShowUpgradeModal(false)}>
+          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+            <LinearGradient
+              colors={flareGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.modalGlow}
+            />
+            <View style={styles.modalInner}>
+              <Text style={styles.modalTag}>PREMIUM</Text>
+              <Text style={styles.modalTitle}>Unlock Customization</Text>
+              <Text style={styles.modalDesc}>
+                Get unlimited QR codes, custom colors, templates, and logo branding.
+              </Text>
+              <View style={{ height: 8 }} />
+              <View style={styles.modalFeatures}>
+                <Text style={styles.modalFeature}>&#10003;  Unlimited generations</Text>
+                <Text style={styles.modalFeature}>&#10003;  5 premium templates</Text>
+                <Text style={styles.modalFeature}>&#10003;  Custom colors</Text>
+                <Text style={styles.modalFeature}>&#10003;  Add your logo</Text>
+                <Text style={styles.modalFeature}>&#10003;  No watermark</Text>
+              </View>
+              <View style={{ height: 20 }} />
+              <FlareButton title="Unlock Premium — $4.99" onPress={handleUnlock} />
+              <View style={{ height: 12 }} />
+              <Pressable onPress={() => setShowUpgradeModal(false)}>
+                <Text style={styles.modalDismiss}>Maybe later</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -551,6 +593,77 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 12,
     fontWeight: '700',
+  },
+  // Modal
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    zIndex: 100,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 28,
+    padding: 2.5,
+    shadowColor: '#A855F7',
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 12 },
+  },
+  modalGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 28,
+  },
+  modalInner: {
+    backgroundColor: '#0F0F1C',
+    borderRadius: 26,
+    padding: 28,
+    alignItems: 'center',
+  },
+  modalTag: {
+    color: colors.accentCyan,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2.6,
+    marginBottom: 12,
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+  },
+  modalDesc: {
+    color: colors.textDim,
+    fontSize: 14,
+    marginTop: 10,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalFeatures: {
+    alignSelf: 'flex-start',
+    gap: 8,
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  modalFeature: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalDismiss: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingVertical: 8,
   },
 });
 
