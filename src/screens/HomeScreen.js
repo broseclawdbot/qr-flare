@@ -23,13 +23,13 @@ function TemplateCard({ item }) {
       {item.gradient ? (
         <LinearGradient colors={item.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={showcaseStyles.cardInner}>
           <View style={{ backgroundColor: item.bg, padding: 10, borderRadius: 10 }}>
-            <QRCode value="https://qrflare.app" size={80} backgroundColor={item.bg} color={item.fg} />
+            <QRCode value="https://qrflare.app" size={60} backgroundColor={item.bg} color={item.fg} />
           </View>
           <Text style={[showcaseStyles.cardLabel, { color: '#fff' }]}>{item.label}</Text>
         </LinearGradient>
       ) : (
         <View style={[showcaseStyles.cardInner, { backgroundColor: item.bg }]}>
-          <QRCode value="https://qrflare.app" size={80} backgroundColor={item.bg} color={item.fg} />
+          <QRCode value="https://qrflare.app" size={60} backgroundColor={item.bg} color={item.fg} />
           <Text style={[showcaseStyles.cardLabel, { color: item.fg }]}>{item.label}</Text>
         </View>
       )}
@@ -39,15 +39,15 @@ function TemplateCard({ item }) {
 
 function ScrollingShowcase() {
   const scrollAnim = useRef(new Animated.Value(0)).current;
-  const CARD_WIDTH = 140;
-  const TOTAL_WIDTH = SHOWCASE_TEMPLATES.length * CARD_WIDTH;
+  const CARD_HEIGHT = 120;
+  const TOTAL_HEIGHT = SHOWCASE_TEMPLATES.length * CARD_HEIGHT;
 
   useEffect(() => {
     const animate = () => {
       scrollAnim.setValue(0);
       Animated.timing(scrollAnim, {
-        toValue: -TOTAL_WIDTH,
-        duration: SHOWCASE_TEMPLATES.length * 4000,
+        toValue: -TOTAL_HEIGHT,
+        duration: SHOWCASE_TEMPLATES.length * 3000,
         useNativeDriver: true,
       }).start(() => animate());
     };
@@ -55,7 +55,6 @@ function ScrollingShowcase() {
     return () => scrollAnim.stopAnimation();
   }, []);
 
-  // Double the items for seamless loop
   const items = [...SHOWCASE_TEMPLATES, ...SHOWCASE_TEMPLATES];
 
   return (
@@ -63,26 +62,25 @@ function ScrollingShowcase() {
       <Animated.View
         style={[
           showcaseStyles.track,
-          { transform: [{ translateX: scrollAnim }] },
+          { transform: [{ translateY: scrollAnim }] },
         ]}
       >
         {items.map((item, i) => (
           <TemplateCard key={`${item.key}-${i}`} item={item} />
         ))}
       </Animated.View>
-      {/* Fade edges */}
       <LinearGradient
         colors={[colors.bg, 'transparent']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={showcaseStyles.fadeLeft}
+        end={{ x: 0, y: 1 }}
+        style={showcaseStyles.fadeTop}
         pointerEvents="none"
       />
       <LinearGradient
         colors={['transparent', colors.bg]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={showcaseStyles.fadeRight}
+        end={{ x: 0, y: 1 }}
+        style={showcaseStyles.fadeBottom}
         pointerEvents="none"
       />
     </View>
@@ -126,14 +124,18 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.center}>
           <Text style={styles.eyebrow}>QR · GENERATOR</Text>
-          <Text style={styles.headline}>Create{'\n'}QR Codes{'\n'}<Text style={styles.headlineAccent}>Fast.</Text></Text>
+          <View style={styles.heroRow}>
+            <View style={styles.heroText}>
+              <Text style={styles.headline}>Create{'\n'}QR Codes{'\n'}<Text style={styles.headlineAccent}>Fast.</Text></Text>
+            </View>
+            <View style={styles.heroShowcase}>
+              <ScrollingShowcase />
+            </View>
+          </View>
           <Text style={styles.sub}>
             Sleek, branded, share-ready codes in seconds.
           </Text>
         </View>
-
-        {/* Scrolling template showcase */}
-        <ScrollingShowcase />
 
         <View style={styles.actions}>
           <FlareButton
@@ -154,54 +156,52 @@ export default function HomeScreen({ navigation }) {
 
 const showcaseStyles = StyleSheet.create({
   container: {
-    height: 160,
+    height: 180,
     overflow: 'hidden',
-    marginHorizontal: -28,
-    marginBottom: 20,
+    borderRadius: 16,
   },
   track: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    height: 160,
   },
   card: {
-    width: 130,
-    marginHorizontal: 5,
-    borderRadius: 18,
+    width: 110,
+    marginVertical: 4,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: '#A855F7',
     shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   cardInner: {
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
-    borderRadius: 18,
-    gap: 10,
+    borderRadius: 14,
+    gap: 6,
   },
   cardLabel: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
-  fadeLeft: {
+  fadeTop: {
     position: 'absolute',
     left: 0,
-    top: 0,
-    bottom: 0,
-    width: 40,
-  },
-  fadeRight: {
-    position: 'absolute',
     right: 0,
     top: 0,
+    height: 30,
+  },
+  fadeBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     bottom: 0,
-    width: 40,
+    height: 30,
   },
 });
 
@@ -244,11 +244,23 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     marginBottom: 18,
   },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroText: {
+    flex: 1,
+  },
+  heroShowcase: {
+    width: 120,
+    marginLeft: 12,
+  },
   headline: {
     color: colors.text,
-    fontSize: 48,
+    fontSize: 44,
     fontWeight: '900',
-    lineHeight: 52,
+    lineHeight: 48,
     letterSpacing: -1.5,
   },
   headlineAccent: {
