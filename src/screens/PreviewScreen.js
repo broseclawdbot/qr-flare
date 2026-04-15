@@ -27,48 +27,45 @@ const BG_COLORS = ['#FFFFFF', '#F5F5F7', '#05050C', '#FEF3C7', '#E0F2FE'];
 
 export default function PreviewScreen({ route, navigation }) {
   const { payload, type } = route.params || {};
-  const { isPremium, unlockPremium } = usePremium();
+  const { isPremium, unlockPremium, generationCount, canGenerate, getOfferType, dismissOffer } = usePremium();
   const qrRef = useRef(null);
   const [saved, setSaved] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerType, setOfferType] = useState('none');
 
-  // Build a clean filename from the payload content
   const getFileName = () => {
     let name = '';
     if (payload) {
-      // Strip protocol, mailto:, tel: etc
       name = payload
         .replace(/^https?:\/\//i, '')
         .replace(/^mailto:/i, '')
         .replace(/^tel:/i, '')
-        .replace(/^WIFI:.*S:([^;]*).*/i, '$1') // extract SSID for wifi
-        .replace(/[^a-zA-Z0-9._-]/g, '-') // sanitize
-        .replace(/-+/g, '-') // collapse dashes
-        .replace(/^-|-$/g, '') // trim dashes
-        .substring(0, 40); // limit length
+        .replace(/^WIFI:.*S:([^;]*).*/i, '$1')
+        .replace(/[^a-zA-Z0-9._-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 40);
     }
     return `QRFlare-${name || type || 'code'}`;
   };
 
-  // Customization state — always visible, but only active for premium
+  // All customization is always active — everyone gets full experience
   const [template, setTemplate] = useState('clean');
   const [fg, setFg] = useState('#05050C');
   const [bg, setBg] = useState('#FFFFFF');
   const [logo, setLogo] = useState(null);
 
-  const actualFg = isPremium ? fg : '#05050C';
-  const actualBg = isPremium ? bg : '#FFFFFF';
-  const actualTemplate = isPremium ? template : 'clean';
-  const actualLogo = isPremium ? logo : null;
-
-  const promptUpgrade = () => setShowUpgradeModal(true);
   const handleUnlock = () => {
     unlockPremium();
-    setShowUpgradeModal(false);
+    setShowOfferModal(false);
+  };
+
+  const handleDismissOffer = () => {
+    dismissOffer();
+    setShowOfferModal(false);
   };
 
   const pickLogo = useCallback(async () => {
-    if (!isPremium) { promptUpgrade(); return; }
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
       input.type = 'file';
@@ -113,7 +110,7 @@ export default function PreviewScreen({ route, navigation }) {
           canvas.width = qrImg.width + padding * 2;
           canvas.height = qrImg.height + padding * 2;
           const ctx = canvas.getContext('2d');
-          ctx.fillStyle = actualBg;
+          ctx.fillStyle = bg;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(qrImg, padding, padding);
 
@@ -131,10 +128,16 @@ export default function PreviewScreen({ route, navigation }) {
             link.click();
             document.body.removeChild(link);
             setSaved(true);
+            if (!isPremium) {
+              const offer = getOfferType();
+              if (offer !== 'none') {
+                setTimeout(() => { setOfferType(offer); setShowOfferModal(true); }, 800);
+              }
+            }
           };
 
           // Draw logo on top if present
-          if (actualLogo) {
+          if (logo) {
             const logoImg = new window.Image();
             logoImg.crossOrigin = 'anonymous';
             logoImg.onload = () => {
@@ -143,7 +146,7 @@ export default function PreviewScreen({ route, navigation }) {
               const cx = canvas.width / 2;
               const cy = padding + qrImg.height / 2;
               // White background behind logo
-              ctx.fillStyle = actualBg;
+              ctx.fillStyle = bg;
               ctx.beginPath();
               ctx.roundRect(cx - logoSize/2 - logoPad, cy - logoSize/2 - logoPad, logoSize + logoPad*2, logoSize + logoPad*2, 14);
               ctx.fill();
@@ -152,7 +155,7 @@ export default function PreviewScreen({ route, navigation }) {
               finalize();
             };
             logoImg.onerror = () => finalize();
-            logoImg.src = actualLogo;
+            logoImg.src = logo;
           } else {
             finalize();
           }
@@ -187,20 +190,20 @@ export default function PreviewScreen({ route, navigation }) {
           style={styles.glow}
         />
         <View style={styles.card}>
-          <TemplateWrapper template={actualTemplate} bg={actualBg} fg={actualFg}>
+          <TemplateWrapper template={template} bg={bg} fg={fg}>
             <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
               <QRCode
                 value={payload || ' '}
                 size={220}
-                backgroundColor={actualBg}
-                color={actualFg}
+                backgroundColor={bg}
+                color={fg}
                 ecl="H"
                 getRef={(ref) => (qrRef.current = ref)}
               />
-              {actualLogo && (
+              {logo && (
                 <View style={{
                   position: 'absolute',
-                  backgroundColor: actualBg,
+                  backgroundColor: bg,
                   padding: 4,
                   borderRadius: 10,
                   shadowColor: '#000',
@@ -241,24 +244,10 @@ export default function PreviewScreen({ route, navigation }) {
 
       <View style={{ height: 28 }} />
 
-      {/* Customization Section — always visible */}
+      {/* Customization Section — fully open */}
       <View style={styles.customizeHeader}>
         <Text style={styles.customizeTitle}>Customize</Text>
-        {!isPremium && (
-          <Pressable
-            style={styles.unlockChip}
-            onPress={() => navigation.navigate('Upgrade')}
-          >
-            <Text style={styles.unlockChipText}>UNLOCK</Text>
-          </Pressable>
-        )}
       </View>
-
-      {!isPremium && (
-        <Text style={styles.lockedHint}>
-          Preview the options below — upgrade to apply them to your QR code
-        </Text>
-      )}
 
       {/* Templates */}
       <Text style={styles.sectionLabel}>Template</Text>
@@ -268,20 +257,16 @@ export default function PreviewScreen({ route, navigation }) {
           return (
             <Pressable
               key={t.key}
-              onPress={() => {
-                if (!isPremium) { promptUpgrade(); return; }
-                setTemplate(t.key);
-              }}
+              onPress={() => setTemplate(t.key)}
               style={[
                 styles.chip,
-                active && isPremium && styles.chipActive,
-                !isPremium && styles.chipLocked,
+                active && styles.chipActive,
               ]}
             >
               <Text
                 style={[
                   styles.chipText,
-                  active && isPremium && styles.chipTextActive,
+                  active && styles.chipTextActive,
                 ]}
               >
                 {t.label}
@@ -293,18 +278,18 @@ export default function PreviewScreen({ route, navigation }) {
 
       {/* Logo */}
       <Text style={styles.sectionLabel}>Logo</Text>
-      <Pressable style={[styles.logoPick, !isPremium && styles.logoLocked]} onPress={pickLogo}>
-        {logo && isPremium ? (
+      <Pressable style={styles.logoPick} onPress={pickLogo}>
+        {logo ? (
           <Image source={{ uri: logo }} style={styles.logoImg} />
         ) : (
           <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoPlus}>{isPremium ? '+' : '\u{1F512}'}</Text>
-            <Text style={styles.logoText}>{isPremium ? 'Upload Logo' : 'Premium'}</Text>
-            {isPremium && <Text style={styles.logoFormats}>PNG, JPG, SVG</Text>}
+            <Text style={styles.logoPlus}>+</Text>
+            <Text style={styles.logoText}>Upload Logo</Text>
+            <Text style={styles.logoFormats}>PNG, JPG, SVG</Text>
           </View>
         )}
       </Pressable>
-      {logo && isPremium && (
+      {logo && (
         <Pressable onPress={() => setLogo(null)} style={styles.removeLogo}>
           <Text style={styles.removeLogoText}>Remove Logo</Text>
         </Pressable>
@@ -316,15 +301,11 @@ export default function PreviewScreen({ route, navigation }) {
         {FG_COLORS.map((c) => (
           <Pressable
             key={c}
-            onPress={() => {
-              if (!isPremium) { promptUpgrade(); return; }
-              setFg(c);
-            }}
+            onPress={() => setFg(c)}
             style={[
               styles.swatch,
               { backgroundColor: c },
-              fg === c && isPremium && styles.swatchActive,
-              !isPremium && styles.swatchLocked,
+              fg === c && styles.swatchActive,
             ]}
           />
         ))}
@@ -335,15 +316,11 @@ export default function PreviewScreen({ route, navigation }) {
         {BG_COLORS.map((c) => (
           <Pressable
             key={c}
-            onPress={() => {
-              if (!isPremium) { promptUpgrade(); return; }
-              setBg(c);
-            }}
+            onPress={() => setBg(c)}
             style={[
               styles.swatch,
               { backgroundColor: c },
-              bg === c && isPremium && styles.swatchActive,
-              !isPremium && styles.swatchLocked,
+              bg === c && styles.swatchActive,
             ]}
           />
         ))}
@@ -351,18 +328,14 @@ export default function PreviewScreen({ route, navigation }) {
 
       <View style={{ height: 20 }} />
 
-      {!isPremium && (
-        <FlareButton
-          title="Unlock All Customization — $4.99"
-          onPress={promptUpgrade}
-        />
-      )}
-
       <View style={{ height: 40 }} />
 
-      {/* Upgrade Modal Overlay */}
-      {showUpgradeModal && (
-        <Pressable style={styles.modalOverlay} onPress={() => setShowUpgradeModal(false)}>
+      {/* Offer Modal — shown after download based on generation count */}
+      {showOfferModal && (
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={offerType === 'subscription' ? undefined : () => setShowOfferModal(false)}
+        >
           <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
             <LinearGradient
               colors={flareGradient}
@@ -371,25 +344,45 @@ export default function PreviewScreen({ route, navigation }) {
               style={styles.modalGlow}
             />
             <View style={styles.modalInner}>
-              <Text style={styles.modalTag}>PREMIUM</Text>
-              <Text style={styles.modalTitle}>Unlock Customization</Text>
-              <Text style={styles.modalDesc}>
-                Get unlimited QR codes, custom colors, templates, and logo branding.
-              </Text>
-              <View style={{ height: 8 }} />
-              <View style={styles.modalFeatures}>
-                <Text style={styles.modalFeature}>&#10003;  Unlimited generations</Text>
-                <Text style={styles.modalFeature}>&#10003;  5 premium templates</Text>
-                <Text style={styles.modalFeature}>&#10003;  Custom colors</Text>
-                <Text style={styles.modalFeature}>&#10003;  Add your logo</Text>
-                <Text style={styles.modalFeature}>&#10003;  No watermark</Text>
-              </View>
-              <View style={{ height: 20 }} />
-              <FlareButton title="Unlock Premium — $4.99" onPress={handleUnlock} />
-              <View style={{ height: 12 }} />
-              <Pressable onPress={() => setShowUpgradeModal(false)}>
-                <Text style={styles.modalDismiss}>Maybe later</Text>
-              </Pressable>
+              {offerType === 'onetimeoffer' ? (
+                <>
+                  <Text style={styles.modalTag}>YOU'VE USED 3 OF 3 FREE QR CODES</Text>
+                  <Text style={styles.modalTitle}>Don't Lose Access</Text>
+                  <Text style={styles.modalDesc}>
+                    You've been creating amazing QR codes — unlock unlimited generations and keep all your customization features forever.
+                  </Text>
+                  <View style={{ height: 8 }} />
+                  <View style={styles.modalFeatures}>
+                    <Text style={styles.modalFeature}>&#10003;  Unlimited QR codes forever</Text>
+                    <Text style={styles.modalFeature}>&#10003;  All templates & colors</Text>
+                    <Text style={styles.modalFeature}>&#10003;  Logo branding</Text>
+                    <Text style={styles.modalFeature}>&#10003;  No watermark</Text>
+                  </View>
+                  <View style={{ height: 20 }} />
+                  <FlareButton title="Unlock Forever — $4.99" onPress={handleUnlock} />
+                  <View style={{ height: 12 }} />
+                  <Pressable onPress={handleDismissOffer}>
+                    <Text style={styles.modalDismiss}>Let me try one more</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.modalTag}>FINAL OFFER</Text>
+                  <Text style={styles.modalTitle}>Your Free Codes{'\n'}Are Gone</Text>
+                  <Text style={styles.modalDesc}>
+                    You've used all your free generations. Subscribe now to keep creating unlimited customized QR codes.
+                  </Text>
+                  <View style={{ height: 8 }} />
+                  <View style={styles.modalFeatures}>
+                    <Text style={styles.modalFeature}>&#10003;  Unlimited QR codes</Text>
+                    <Text style={styles.modalFeature}>&#10003;  Full customization</Text>
+                    <Text style={styles.modalFeature}>&#10003;  Cancel anytime</Text>
+                  </View>
+                  <View style={{ height: 20 }} />
+                  <FlareButton title="Subscribe — $0.99/mo" onPress={handleUnlock} />
+                  <Text style={styles.subscribeNote}>Cancel anytime · Billed monthly</Text>
+                </>
+              )}
             </View>
           </Pressable>
         </Pressable>
@@ -725,6 +718,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     paddingVertical: 8,
+  },
+  // Post-download prompt
+  postDownloadCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: colors.bgElevated,
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  postDownloadCheck: {
+    fontSize: 36,
+    color: colors.success,
+    marginBottom: 10,
+  },
+  postDownloadTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  postDownloadDesc: {
+    color: colors.textDim,
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  subscribeNote: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    marginTop: 12,
   },
 });
 

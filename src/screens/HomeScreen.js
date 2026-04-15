@@ -142,12 +142,6 @@ export default function HomeScreen({ navigation }) {
             title="Generate Free QR"
             onPress={() => navigation.navigate('Create')}
           />
-          <View style={{ height: 14 }} />
-          <FlareButton
-            title={isPremium ? 'Branding Unlocked' : 'Unlock Branding'}
-            variant="secondary"
-            onPress={() => navigation.navigate('Upgrade')}
-          />
         </View>
       </View>
     </SafeAreaView>
