@@ -13,11 +13,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareGradient, flareTints } from '../theme/colors';
 import { usePremium } from '../context/PremiumContext';
-import { Linking } from 'react-native';
-
-const STRIPE_LIFETIME_URL = 'https://buy.stripe.com/14A4gB3Yndvv4P9cx1bEA00';
-const STRIPE_MONTHLY_URL = 'https://buy.stripe.com/bJe14peD1777chB9kPbEA01';
-const SUCCESS_RETURN_URL = 'https://www.qrflare.app';
 
 const TEMPLATES = [
   { key: 'clean', label: 'Clean' },
@@ -32,7 +27,7 @@ const BG_COLORS = ['#FFFFFF', '#F5F5F7', '#05050C', '#FEF3C7', '#E0F2FE'];
 
 export default function PreviewScreen({ route, navigation }) {
   const { payload, type } = route.params || {};
-  const { isPremium, unlockPremium, generationCount, canGenerate, getOfferType, dismissOffer } = usePremium();
+  const { isPremium, startCheckout, generationCount, canGenerate, getOfferType, dismissOffer, isVerifying } = usePremium();
   const qrRef = useRef(null);
   const [saved, setSaved] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
@@ -62,23 +57,12 @@ export default function PreviewScreen({ route, navigation }) {
 
   const handleLifetimePurchase = () => {
     setShowOfferModal(false);
-    if (Platform.OS === 'web') {
-      window.open(STRIPE_LIFETIME_URL, '_blank');
-    } else {
-      Linking.openURL(STRIPE_LIFETIME_URL);
-    }
-    // Premium will be activated when they return — for now unlock optimistically
-    unlockPremium();
+    startCheckout('lifetime'); // Redirects to Stripe — premium unlocks ONLY after verified payment
   };
 
   const handleMonthlyPurchase = () => {
     setShowOfferModal(false);
-    if (Platform.OS === 'web') {
-      window.open(STRIPE_MONTHLY_URL, '_blank');
-    } else {
-      Linking.openURL(STRIPE_MONTHLY_URL);
-    }
-    unlockPremium();
+    startCheckout('monthly');
   };
 
   const handleDismissOffer = () => {

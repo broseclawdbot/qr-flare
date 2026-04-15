@@ -38,7 +38,7 @@ Volume Entertainment shall not be liable for any indirect, incidental, or conseq
 We may update these terms at any time. Continued use of the App constitutes acceptance of updated terms.
 
 9. Contact
-For questions, contact: darealbrose@gmail.com`;
+For questions, contact: support@qrflare.app`;
 
 const PRIVACY = `Privacy Policy
 
@@ -72,7 +72,7 @@ We do not sell, trade, or share your personal information with third parties exc
 QR Flare is not directed at children under 13. We do not knowingly collect information from children.
 
 7. Your Rights
-You may request deletion of any data associated with your device by contacting us at darealbrose@gmail.com.
+You may request deletion of any data associated with your device by contacting us at support@qrflare.app.
 
 8. Security
 We use industry-standard security measures including HTTPS encryption and secure payment processing via Stripe.
@@ -81,7 +81,7 @@ We use industry-standard security measures including HTTPS encryption and secure
 We may update this policy at any time. Changes will be reflected by the "Last Updated" date.
 
 10. Contact
-For privacy concerns, contact: darealbrose@gmail.com`;
+For privacy concerns, contact: support@qrflare.app`;
 
 export default function LegalScreen({ route }) {
   const [tab, setTab] = useState(route?.params?.tab || 'terms');
