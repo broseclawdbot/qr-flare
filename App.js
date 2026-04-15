@@ -11,6 +11,7 @@ import CreateScreen from './src/screens/CreateScreen';
 import PreviewScreen from './src/screens/PreviewScreen';
 import UpgradeScreen from './src/screens/UpgradeScreen';
 import CustomizeScreen from './src/screens/CustomizeScreen';
+import LegalScreen from './src/screens/LegalScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,6 +49,7 @@ export default function App() {
           <Stack.Screen name="Preview" component={PreviewScreen} options={{ title: 'Preview' }} />
           <Stack.Screen name="Upgrade" component={UpgradeScreen} options={{ title: 'Upgrade' }} />
           <Stack.Screen name="Customize" component={CustomizeScreen} options={{ title: 'Customize' }} />
+          <Stack.Screen name="Legal" component={LegalScreen} options={{ title: 'Legal' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PremiumProvider>

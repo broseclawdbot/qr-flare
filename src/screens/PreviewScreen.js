@@ -13,6 +13,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareGradient, flareTints } from '../theme/colors';
 import { usePremium } from '../context/PremiumContext';
+import { Linking } from 'react-native';
+
+const STRIPE_LIFETIME_URL = 'https://buy.stripe.com/14A4gB3Yndvv4P9cx1bEA00';
+const STRIPE_MONTHLY_URL = 'https://buy.stripe.com/bJe14peD1777chB9kPbEA01';
+const SUCCESS_RETURN_URL = 'https://www.qrflare.app';
 
 const TEMPLATES = [
   { key: 'clean', label: 'Clean' },
@@ -55,9 +60,25 @@ export default function PreviewScreen({ route, navigation }) {
   const [bg, setBg] = useState('#FFFFFF');
   const [logo, setLogo] = useState(null);
 
-  const handleUnlock = () => {
-    unlockPremium();
+  const handleLifetimePurchase = () => {
     setShowOfferModal(false);
+    if (Platform.OS === 'web') {
+      window.open(STRIPE_LIFETIME_URL, '_blank');
+    } else {
+      Linking.openURL(STRIPE_LIFETIME_URL);
+    }
+    // Premium will be activated when they return — for now unlock optimistically
+    unlockPremium();
+  };
+
+  const handleMonthlyPurchase = () => {
+    setShowOfferModal(false);
+    if (Platform.OS === 'web') {
+      window.open(STRIPE_MONTHLY_URL, '_blank');
+    } else {
+      Linking.openURL(STRIPE_MONTHLY_URL);
+    }
+    unlockPremium();
   };
 
   const handleDismissOffer = () => {
@@ -359,7 +380,7 @@ export default function PreviewScreen({ route, navigation }) {
                     <Text style={styles.modalFeature}>&#10003;  No watermark</Text>
                   </View>
                   <View style={{ height: 20 }} />
-                  <FlareButton title="Unlock Forever — $4.99" onPress={handleUnlock} />
+                  <FlareButton title="Unlock Forever — $4.99" onPress={handleLifetimePurchase} />
                   <View style={{ height: 12 }} />
                   <Pressable onPress={handleDismissOffer}>
                     <Text style={styles.modalDismiss}>Let me try one more</Text>
@@ -379,7 +400,7 @@ export default function PreviewScreen({ route, navigation }) {
                     <Text style={styles.modalFeature}>&#10003;  Cancel anytime</Text>
                   </View>
                   <View style={{ height: 20 }} />
-                  <FlareButton title="Subscribe — $0.99/mo" onPress={handleUnlock} />
+                  <FlareButton title="Subscribe — $0.99/mo" onPress={handleMonthlyPurchase} />
                   <Text style={styles.subscribeNote}>Cancel anytime · Billed monthly</Text>
                 </>
               )}

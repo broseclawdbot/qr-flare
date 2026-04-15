@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 import FlareButton from '../components/FlareButton';
@@ -142,6 +142,15 @@ export default function HomeScreen({ navigation }) {
             title="Generate Free QR"
             onPress={() => navigation.navigate('Create')}
           />
+          <View style={styles.footer}>
+            <Pressable onPress={() => navigation.navigate('Legal', { tab: 'terms' })}>
+              <Text style={styles.footerLink}>Terms</Text>
+            </Pressable>
+            <Text style={styles.footerDot}>·</Text>
+            <Pressable onPress={() => navigation.navigate('Legal', { tab: 'privacy' })}>
+              <Text style={styles.footerLink}>Privacy</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -267,6 +276,22 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   actions: {},
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 8,
+  },
+  footerLink: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  footerDot: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
   flare: {
     position: 'absolute',
     borderRadius: 500,

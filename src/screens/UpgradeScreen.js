@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareGradient, flareTints } from '../theme/colors';
+
+const STRIPE_LIFETIME_URL = 'https://buy.stripe.com/14A4gB3Yndvv4P9cx1bEA00';
 import { usePremium } from '../context/PremiumContext';
 
 const FEATURES = [
@@ -98,6 +100,11 @@ export default function UpgradeScreen({ navigation }) {
           <FlareButton
             title="Unlock Premium — $4.99"
             onPress={() => {
+              if (Platform.OS === 'web') {
+                window.open(STRIPE_LIFETIME_URL, '_blank');
+              } else {
+                Linking.openURL(STRIPE_LIFETIME_URL);
+              }
               unlockPremium();
               setJustUnlocked(true);
             }}
