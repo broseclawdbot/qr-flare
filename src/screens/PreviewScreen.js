@@ -138,8 +138,8 @@ export default function PreviewScreen({ route, navigation }) {
             const logoImg = new window.Image();
             logoImg.crossOrigin = 'anonymous';
             logoImg.onload = () => {
-              const logoSize = 60;
-              const logoPad = 6;
+              const logoSize = 40;
+              const logoPad = 4;
               const cx = canvas.width / 2;
               const cy = padding + qrImg.height / 2;
               // White background behind logo
@@ -194,14 +194,15 @@ export default function PreviewScreen({ route, navigation }) {
                 size={220}
                 backgroundColor={actualBg}
                 color={actualFg}
+                ecl="H"
                 getRef={(ref) => (qrRef.current = ref)}
               />
               {actualLogo && (
                 <View style={{
                   position: 'absolute',
                   backgroundColor: actualBg,
-                  padding: 6,
-                  borderRadius: 14,
+                  padding: 4,
+                  borderRadius: 10,
                   shadowColor: '#000',
                   shadowOpacity: 0.2,
                   shadowRadius: 8,
@@ -209,7 +210,7 @@ export default function PreviewScreen({ route, navigation }) {
                 }}>
                   <Image
                     source={{ uri: actualLogo }}
-                    style={{ width: 60, height: 60, borderRadius: 10 }}
+                    style={{ width: 40, height: 40, borderRadius: 8 }}
                     resizeMode="contain"
                   />
                 </View>

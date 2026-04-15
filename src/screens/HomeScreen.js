@@ -23,13 +23,13 @@ function TemplateCard({ item }) {
       {item.gradient ? (
         <LinearGradient colors={item.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={showcaseStyles.cardInner}>
           <View style={{ backgroundColor: item.bg, padding: 10, borderRadius: 10 }}>
-            <QRCode value="https://qrflare.app" size={60} backgroundColor={item.bg} color={item.fg} />
+            <QRCode value="https://qrflare.app" size={110} backgroundColor={item.bg} color={item.fg} />
           </View>
           <Text style={[showcaseStyles.cardLabel, { color: '#fff' }]}>{item.label}</Text>
         </LinearGradient>
       ) : (
         <View style={[showcaseStyles.cardInner, { backgroundColor: item.bg }]}>
-          <QRCode value="https://qrflare.app" size={60} backgroundColor={item.bg} color={item.fg} />
+          <QRCode value="https://qrflare.app" size={110} backgroundColor={item.bg} color={item.fg} />
           <Text style={[showcaseStyles.cardLabel, { color: item.fg }]}>{item.label}</Text>
         </View>
       )}
@@ -39,7 +39,7 @@ function TemplateCard({ item }) {
 
 function ScrollingShowcase() {
   const scrollAnim = useRef(new Animated.Value(0)).current;
-  const CARD_HEIGHT = 120;
+  const CARD_HEIGHT = 185;
   const TOTAL_HEIGHT = SHOWCASE_TEMPLATES.length * CARD_HEIGHT;
 
   useEffect(() => {
@@ -156,37 +156,37 @@ export default function HomeScreen({ navigation }) {
 
 const showcaseStyles = StyleSheet.create({
   container: {
-    height: 180,
+    height: 220,
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: 20,
   },
   track: {
     flexDirection: 'column',
     alignItems: 'center',
   },
   card: {
-    width: 110,
-    marginVertical: 4,
-    borderRadius: 14,
+    width: '100%',
+    marginVertical: 5,
+    borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: '#A855F7',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   cardInner: {
-    padding: 12,
+    padding: 20,
     alignItems: 'center',
-    borderRadius: 14,
-    gap: 6,
+    borderRadius: 18,
+    gap: 10,
   },
   cardLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   fadeTop: {
@@ -247,20 +247,19 @@ const styles = StyleSheet.create({
   heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 16,
   },
   heroText: {
     flex: 1,
   },
   heroShowcase: {
-    width: 120,
-    marginLeft: 12,
+    flex: 1,
   },
   headline: {
     color: colors.text,
-    fontSize: 44,
+    fontSize: 46,
     fontWeight: '900',
-    lineHeight: 48,
+    lineHeight: 50,
     letterSpacing: -1.5,
   },
   headlineAccent: {
