@@ -97,7 +97,7 @@ export default function PreviewScreen({ route, navigation }) {
         console.log('ImagePicker error:', e);
       }
     }
-  }, [isPremium, navigation]);
+  }, []);
 
   const handleDownload = useCallback(() => {
     if (!qrRef.current) return;
@@ -165,7 +165,7 @@ export default function PreviewScreen({ route, navigation }) {
         setSaved(true);
       }
     });
-  }, [type, actualBg, isPremium, actualLogo]);
+  }, [type, bg, isPremium, logo, getOfferType]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -212,7 +212,7 @@ export default function PreviewScreen({ route, navigation }) {
                   elevation: 5,
                 }}>
                   <Image
-                    source={{ uri: actualLogo }}
+                    source={{ uri: logo }}
                     style={{ width: 40, height: 40, borderRadius: 8 }}
                     resizeMode="contain"
                   />
