@@ -32,6 +32,24 @@ export default function PreviewScreen({ route, navigation }) {
   const [saved, setSaved] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  // Build a clean filename from the payload content
+  const getFileName = () => {
+    let name = '';
+    if (payload) {
+      // Strip protocol, mailto:, tel: etc
+      name = payload
+        .replace(/^https?:\/\//i, '')
+        .replace(/^mailto:/i, '')
+        .replace(/^tel:/i, '')
+        .replace(/^WIFI:.*S:([^;]*).*/i, '$1') // extract SSID for wifi
+        .replace(/[^a-zA-Z0-9._-]/g, '-') // sanitize
+        .replace(/-+/g, '-') // collapse dashes
+        .replace(/^-|-$/g, '') // trim dashes
+        .substring(0, 40); // limit length
+    }
+    return `QRFlare-${name || type || 'code'}`;
+  };
+
   // Customization state — always visible, but only active for premium
   const [template, setTemplate] = useState('clean');
   const [fg, setFg] = useState('#05050C');
@@ -88,36 +106,63 @@ export default function PreviewScreen({ route, navigation }) {
     if (!qrRef.current) return;
     qrRef.current.toDataURL((dataURL) => {
       if (Platform.OS === 'web') {
-        const img = new window.Image();
-        img.onload = () => {
+        const qrImg = new window.Image();
+        qrImg.onload = () => {
           const padding = 40;
           const canvas = document.createElement('canvas');
-          canvas.width = img.width + padding * 2;
-          canvas.height = img.height + padding * 2;
+          canvas.width = qrImg.width + padding * 2;
+          canvas.height = qrImg.height + padding * 2;
           const ctx = canvas.getContext('2d');
           ctx.fillStyle = actualBg;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, padding, padding);
-          if (!isPremium) {
-            ctx.fillStyle = '#CCCCCC';
-            ctx.font = '12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Made with QR Flare', canvas.width / 2, canvas.height - 12);
+          ctx.drawImage(qrImg, padding, padding);
+
+          const finalize = () => {
+            if (!isPremium) {
+              ctx.fillStyle = '#CCCCCC';
+              ctx.font = '12px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('Made with QR Flare', canvas.width / 2, canvas.height - 12);
+            }
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `${getFileName()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setSaved(true);
+          };
+
+          // Draw logo on top if present
+          if (actualLogo) {
+            const logoImg = new window.Image();
+            logoImg.crossOrigin = 'anonymous';
+            logoImg.onload = () => {
+              const logoSize = 60;
+              const logoPad = 6;
+              const cx = canvas.width / 2;
+              const cy = padding + qrImg.height / 2;
+              // White background behind logo
+              ctx.fillStyle = actualBg;
+              ctx.beginPath();
+              ctx.roundRect(cx - logoSize/2 - logoPad, cy - logoSize/2 - logoPad, logoSize + logoPad*2, logoSize + logoPad*2, 14);
+              ctx.fill();
+              // Draw logo
+              ctx.drawImage(logoImg, cx - logoSize/2, cy - logoSize/2, logoSize, logoSize);
+              finalize();
+            };
+            logoImg.onerror = () => finalize();
+            logoImg.src = actualLogo;
+          } else {
+            finalize();
           }
-          const link = document.createElement('a');
-          link.href = canvas.toDataURL('image/png');
-          link.download = `qr-flare-${type || 'code'}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setSaved(true);
         };
-        img.src = `data:image/png;base64,${dataURL}`;
+        qrImg.src = `data:image/png;base64,${dataURL}`;
       } else {
         setSaved(true);
       }
     });
-  }, [type, actualBg, isPremium]);
+  }, [type, actualBg, isPremium, actualLogo]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -143,18 +188,33 @@ export default function PreviewScreen({ route, navigation }) {
         />
         <View style={styles.card}>
           <TemplateWrapper template={actualTemplate} bg={actualBg} fg={actualFg}>
-            <QRCode
-              value={payload || ' '}
-              size={220}
-              backgroundColor={actualBg}
-              color={actualFg}
-              logo={actualLogo ? { uri: actualLogo } : undefined}
-              logoSize={70}
-              logoBackgroundColor={actualBg}
-              logoBorderRadius={12}
-              logoMargin={6}
-              getRef={(ref) => (qrRef.current = ref)}
-            />
+            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+              <QRCode
+                value={payload || ' '}
+                size={220}
+                backgroundColor={actualBg}
+                color={actualFg}
+                getRef={(ref) => (qrRef.current = ref)}
+              />
+              {actualLogo && (
+                <View style={{
+                  position: 'absolute',
+                  backgroundColor: actualBg,
+                  padding: 6,
+                  borderRadius: 14,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 5,
+                }}>
+                  <Image
+                    source={{ uri: actualLogo }}
+                    style={{ width: 60, height: 60, borderRadius: 10 }}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
+            </View>
           </TemplateWrapper>
           <Text style={styles.typeTag}>{(type || 'qr').toUpperCase()}</Text>
           {type === 'email' && (

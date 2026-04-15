@@ -1,10 +1,93 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import QRCode from 'react-native-qrcode-svg';
 import FlareButton from '../components/FlareButton';
 import Logo from '../components/Logo';
 import { colors, flareTints } from '../theme/colors';
 import { usePremium } from '../context/PremiumContext';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const SHOWCASE_TEMPLATES = [
+  { key: 'clean', label: 'Clean', bg: '#FFFFFF', fg: '#05050C' },
+  { key: 'instagram', label: 'Instagram', bg: '#FFFFFF', fg: '#DD2A7B', gradient: ['#F58529', '#DD2A7B', '#8134AF'] },
+  { key: 'poster', label: 'Scan Me', bg: '#05050C', fg: '#22D3EE' },
+  { key: 'card', label: 'Biz Card', bg: '#F5F5F7', fg: '#A855F7' },
+  { key: 'wifi', label: 'Wi-Fi', bg: '#FEF3C7', fg: '#05050C' },
+];
+
+function TemplateCard({ item }) {
+  return (
+    <View style={showcaseStyles.card}>
+      {item.gradient ? (
+        <LinearGradient colors={item.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={showcaseStyles.cardInner}>
+          <View style={{ backgroundColor: item.bg, padding: 10, borderRadius: 10 }}>
+            <QRCode value="https://qrflare.app" size={80} backgroundColor={item.bg} color={item.fg} />
+          </View>
+          <Text style={[showcaseStyles.cardLabel, { color: '#fff' }]}>{item.label}</Text>
+        </LinearGradient>
+      ) : (
+        <View style={[showcaseStyles.cardInner, { backgroundColor: item.bg }]}>
+          <QRCode value="https://qrflare.app" size={80} backgroundColor={item.bg} color={item.fg} />
+          <Text style={[showcaseStyles.cardLabel, { color: item.fg }]}>{item.label}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ScrollingShowcase() {
+  const scrollAnim = useRef(new Animated.Value(0)).current;
+  const CARD_WIDTH = 140;
+  const TOTAL_WIDTH = SHOWCASE_TEMPLATES.length * CARD_WIDTH;
+
+  useEffect(() => {
+    const animate = () => {
+      scrollAnim.setValue(0);
+      Animated.timing(scrollAnim, {
+        toValue: -TOTAL_WIDTH,
+        duration: SHOWCASE_TEMPLATES.length * 4000,
+        useNativeDriver: true,
+      }).start(() => animate());
+    };
+    animate();
+    return () => scrollAnim.stopAnimation();
+  }, []);
+
+  // Double the items for seamless loop
+  const items = [...SHOWCASE_TEMPLATES, ...SHOWCASE_TEMPLATES];
+
+  return (
+    <View style={showcaseStyles.container}>
+      <Animated.View
+        style={[
+          showcaseStyles.track,
+          { transform: [{ translateX: scrollAnim }] },
+        ]}
+      >
+        {items.map((item, i) => (
+          <TemplateCard key={`${item.key}-${i}`} item={item} />
+        ))}
+      </Animated.View>
+      {/* Fade edges */}
+      <LinearGradient
+        colors={[colors.bg, 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={showcaseStyles.fadeLeft}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['transparent', colors.bg]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={showcaseStyles.fadeRight}
+        pointerEvents="none"
+      />
+    </View>
+  );
+}
 
 export default function HomeScreen({ navigation }) {
   const { isPremium } = usePremium();
@@ -49,6 +132,9 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
 
+        {/* Scrolling template showcase */}
+        <ScrollingShowcase />
+
         <View style={styles.actions}>
           <FlareButton
             title="Generate Free QR"
@@ -65,6 +151,59 @@ export default function HomeScreen({ navigation }) {
     </SafeAreaView>
   );
 }
+
+const showcaseStyles = StyleSheet.create({
+  container: {
+    height: 160,
+    overflow: 'hidden',
+    marginHorizontal: -28,
+    marginBottom: 20,
+  },
+  track: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 160,
+  },
+  card: {
+    width: 130,
+    marginHorizontal: 5,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#A855F7',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  cardInner: {
+    padding: 16,
+    alignItems: 'center',
+    borderRadius: 18,
+    gap: 10,
+  },
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  fadeLeft: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
+  },
+  fadeRight: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
+  },
+});
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
@@ -107,9 +246,9 @@ const styles = StyleSheet.create({
   },
   headline: {
     color: colors.text,
-    fontSize: 56,
+    fontSize: 48,
     fontWeight: '900',
-    lineHeight: 60,
+    lineHeight: 52,
     letterSpacing: -1.5,
   },
   headlineAccent: {
@@ -117,9 +256,9 @@ const styles = StyleSheet.create({
   },
   sub: {
     color: colors.textDim,
-    fontSize: 17,
-    marginTop: 20,
-    lineHeight: 24,
+    fontSize: 16,
+    marginTop: 16,
+    lineHeight: 22,
     maxWidth: 320,
   },
   actions: {},
