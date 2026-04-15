@@ -1,11 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FlareButton from '../components/FlareButton';
 import { colors, flareGradient, flareTints } from '../theme/colors';
 import { usePremium } from '../context/PremiumContext';
 
 const FEATURES = [
+  {
+    title: 'Unlimited QR codes',
+    desc: 'No more 3-per-session limit. Generate as many as you need.',
+    color: colors.accentTeal,
+  },
   {
     title: 'Add your logo',
     desc: 'Drop a brand mark in the center of any QR.',
@@ -74,37 +79,33 @@ export default function UpgradeScreen({ navigation }) {
       <View style={{ height: 20 }} />
 
       {isPremium ? (
-        <FlareButton title="Premium Unlocked" onPress={() => navigation.navigate('Home')} />
+        <>
+          <View style={styles.unlockedBadge}>
+            <Text style={styles.unlockedText}>PREMIUM ACTIVE</Text>
+          </View>
+          <View style={{ height: 14 }} />
+          <FlareButton title="Start Creating" onPress={() => navigation.navigate('Create')} />
+        </>
       ) : (
         <>
           <FlareButton
             title="Unlock Premium — $4.99"
             onPress={() => {
-              unlockPremium();
-              navigation.navigate('Home');
+              Alert.alert(
+                'Premium Unlocked!',
+                'You now have unlimited QR codes, custom branding, templates, and colors.',
+                [{ text: 'Let\'s Go!', onPress: () => {
+                  unlockPremium();
+                  navigation.navigate('Home');
+                }}]
+              );
             }}
           />
           <Text style={styles.note}>
-            One-time unlock · Mock purchase for testing
+            One-time purchase · Unlock all features forever
           </Text>
         </>
       )}
-
-      <View style={styles.devToggle}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.devTitle}>Dev · Premium Mode</Text>
-          <Text style={styles.devDesc}>
-            Instant toggle for testing unlocked features.
-          </Text>
-        </View>
-        <Switch
-          value={isPremium}
-          onValueChange={(v) => (v ? unlockPremium() : lockPremium())}
-          trackColor={{ false: '#2B2B4A', true: colors.accentPurple }}
-          thumbColor="#fff"
-          ios_backgroundColor="#2B2B4A"
-        />
-      </View>
     </ScrollView>
   );
 }
@@ -203,26 +204,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontWeight: '700',
   },
-  devToggle: {
-    marginTop: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bgElevated,
-    borderRadius: 18,
-    padding: 18,
+  unlockedBadge: {
+    backgroundColor: '#2DD4BF22',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderStyle: 'dashed',
+    borderColor: colors.success,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    width: '100%',
   },
-  devTitle: {
-    color: colors.text,
-    fontWeight: '800',
+  unlockedText: {
+    color: colors.success,
     fontSize: 14,
-    letterSpacing: 0.3,
-  },
-  devDesc: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 3,
+    fontWeight: '900',
+    letterSpacing: 2,
   },
 });

@@ -66,6 +66,16 @@ export default function PreviewScreen({ route, navigation }) {
             />
           </ViewShot>
           <Text style={styles.typeTag}>{(type || 'qr').toUpperCase()}</Text>
+          {type === 'email' && (
+            <Text style={styles.hintText}>
+              Requires a mail app (Mail, Gmail, etc.) on the scanning device
+            </Text>
+          )}
+          {type === 'phone' && (
+            <Text style={styles.hintText}>
+              Opens the phone dialer when scanned
+            </Text>
+          )}
         </View>
       </View>
 
@@ -149,5 +159,13 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     fontWeight: '800',
     fontSize: 11,
+  },
+  hintText: {
+    marginTop: 12,
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

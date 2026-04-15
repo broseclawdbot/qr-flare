@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,11 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import FlareButton from '../components/FlareButton';
 import { colors } from '../theme/colors';
+import { usePremium } from '../context/PremiumContext';
 
 const TYPES = [
   { key: 'url', label: 'URL' },
@@ -26,6 +28,7 @@ export default function CreateScreen({ navigation }) {
   const [ssid, setSsid] = useState('');
   const [password, setPassword] = useState('');
   const [encryption, setEncryption] = useState('WPA');
+  const { canGenerate, remainingGenerations, incrementGeneration, isPremium } = usePremium();
 
   const payload = useMemo(() => {
     switch (type) {
@@ -45,7 +48,7 @@ export default function CreateScreen({ navigation }) {
     }
   }, [type, value, ssid, password, encryption]);
 
-  const canGenerate = payload && payload.length > 0;
+  const hasPayload = payload && payload.length > 0;
 
   const placeholder = {
     url: 'https://yourbrand.com',
@@ -53,6 +56,22 @@ export default function CreateScreen({ navigation }) {
     email: 'hello@yourbrand.com',
     phone: '+1 555 123 4567',
   }[type];
+
+  const handleGenerate = useCallback(() => {
+    if (!canGenerate) {
+      Alert.alert(
+        'Free Limit Reached',
+        'You\'ve used your 3 free QR codes. Upgrade to Premium for unlimited generations!',
+        [
+          { text: 'Upgrade', onPress: () => navigation.navigate('Upgrade') },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+      return;
+    }
+    incrementGeneration();
+    navigation.navigate('Preview', { payload, type });
+  }, [canGenerate, incrementGeneration, payload, type, navigation]);
 
   return (
     <KeyboardAvoidingView
@@ -88,6 +107,7 @@ export default function CreateScreen({ navigation }) {
 
         {type !== 'wifi' ? (
           <TextInput
+            key={type}
             value={value}
             onChangeText={setValue}
             placeholder={placeholder}
@@ -102,6 +122,7 @@ export default function CreateScreen({ navigation }) {
                 : 'default'
             }
             multiline={type === 'text'}
+            autoCorrect={false}
           />
         ) : (
           <View>
@@ -143,12 +164,17 @@ export default function CreateScreen({ navigation }) {
 
         <View style={{ height: 36 }} />
 
+        {!isPremium && (
+          <Text style={styles.limitText}>
+            {canGenerate
+              ? `${remainingGenerations} free generation${remainingGenerations === 1 ? '' : 's'} remaining`
+              : 'Free limit reached'}
+          </Text>
+        )}
         <FlareButton
-          title="Generate"
-          disabled={!canGenerate}
-          onPress={() =>
-            navigation.navigate('Preview', { payload, type })
-          }
+          title={canGenerate ? 'Generate' : 'Upgrade to Generate'}
+          disabled={!hasPayload}
+          onPress={handleGenerate}
         />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -223,5 +249,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     minHeight: 62,
+  },
+  limitText: {
+    color: colors.accentPink,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginBottom: 14,
   },
 });

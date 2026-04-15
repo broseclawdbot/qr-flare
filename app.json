@@ -6,24 +6,30 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0A14",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.qrflare.app",
       "infoPlist": {
         "NSPhotoLibraryAddUsageDescription": "QR Flare saves your generated QR codes to your photo library.",
-        "NSPhotoLibraryUsageDescription": "QR Flare needs access to let you pick a logo for your QR code."
+        "NSPhotoLibraryUsageDescription": "QR Flare needs access to let you pick a logo for your QR code.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.qrflare.app",
-      "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "extra": {
       "eas": {
-        "projectId": "REPLACE_AFTER_EAS_INIT"
+        "projectId": "f7581b60-ff6f-49ea-a738-2561962d5aa3"
       }
     },
-    "owner": "REPLACE_WITH_YOUR_EXPO_USERNAME"
+    "owner": "volumeentertainment"
   }
 }
