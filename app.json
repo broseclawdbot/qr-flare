@@ -4,14 +4,24 @@
     "slug": "qr-flare",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0A14",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A14"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.qrflare.app",
+      "icon": "./assets/icon.png",
       "infoPlist": {
         "NSPhotoLibraryAddUsageDescription": "QR Flare saves your generated QR codes to your photo library.",
         "NSPhotoLibraryUsageDescription": "QR Flare needs access to let you pick a logo for your QR code.",
